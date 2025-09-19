@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Create Flutter scaffold
+        run: flutter create fx_levels
+
+      - name: Apply our files
+        run: |
+          cp -r lib fx_levels/lib
+          cp pubspec.yaml fx_levels/pubspec.yaml
+          mkdir -p fx_levels/assets
+          cp assets/icon.png fx_levels/assets/icon.png
+
+      - name: Pub get
+        working-directory: fx_levels
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        working-directory: fx_levels
+        run: dart run flutter_launcher_icons
+
+      - name: Build APK (debug)
+        working-directory: fx_levels
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fx_levels-apk
+          path: fx_levels/build/app/outputs/apk/debug/app-debug.apk
